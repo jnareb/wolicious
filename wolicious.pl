@@ -137,7 +137,7 @@ __DATA__
     <div align="center"><h1>Hosts</h1></div>
     <p />
     <div align="center"><table border="0" cellspcacing="15" cellpadding="15">
-    <!--
+%#    <!--
         <tr>
             <th>Nr.</th>
             <th>Name</th>
@@ -145,7 +145,7 @@ __DATA__
             <th>Status</th>
             <th>SSH</th>
         </tr>
-    -->
+%#    -->
 % foreach my $host (sort keys %$hosts) {
 % if ($alive->{$host}) {
         <tr bgcolor="lightgreen">
