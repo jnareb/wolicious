@@ -137,20 +137,19 @@ __DATA__
     -->
 % foreach my $host (sort keys %$hosts) {
 % if ($alive->{$host}) {
-        <tr>
-            <td bgcolor="lightgreen"><%= $host %></td>
-            <td bgcolor="lightgreen"><%= $hosts->{$host}[0] %></td>
-            <td bgcolor="lightgreen"><%= $hosts->{$host}[1] %></td>
-            <td bgcolor="lightgreen">alive</td>
-        </tr>
+        <tr bgcolor="lightgreen">
 % } else {
-        <tr>
-            <td bgcolor="lightgrey"><%= $host %></td>
-            <td bgcolor="lightgrey"><%= $hosts->{$host}[0] %></td>
-            <td bgcolor="lightgrey"><%= $hosts->{$host}[1] %></td>
-            <td bgcolor="lightgrey"><a href="wol/<%= $host %>"> >> wake-up</a></td>
-        </tr>
+        <tr bgcolor="lightgrey">
 % }
+            <td><%= $host %></td>
+            <td><%= $hosts->{$host}[0] %></td>
+            <td><%= $hosts->{$host}[1] %></td>
+% if ($alive->{$host}) {
+            <td>alive</td>
+% } else {
+            <td><a href="wol/<%= $host %>"> >> wake-up</a></td>
+% }
+        </tr>
 % }
     </table></div>
     <p />
