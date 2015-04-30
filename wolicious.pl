@@ -46,12 +46,22 @@ sub index {
 
     my %alive;
 
+    use IO::Socket::INET; # or IO::Socket::IP;
+    my %up;
+
     foreach my $host (keys %hosts) {
         $alive{$host} = 'alive' if $p->ping("$hosts{$host}[1]");
         app->log->debug("ping host:$hosts{$host}[1]");
+
+	my $io = IO::Socket::INET->new(
+	    PeerHost => $hosts{$host}[1],
+	    PeerPort => "ssh(22)"
+	);
+	$up{$host} = 'ssh' if $io;
+	app->log->debug("connect host:$hosts{$host}[1]");
     }
 
-    $self->stash(config => \%config, hosts => \%hosts, alive => \%alive,);
+    $self->stash(config => \%config, hosts => \%hosts, alive => \%alive, up => \%up);
 }
 
 sub wol {
@@ -133,6 +143,7 @@ __DATA__
             <th>Name</th>
             <th>IP</th>
             <th>Status</th>
+            <th>SSH</th>
         </tr>
     -->
 % foreach my $host (sort keys %$hosts) {
@@ -148,6 +159,11 @@ __DATA__
             <td bgcolor="lightgreen">alive</td>
 % } else {
             <td bgcolor="lightgrey"><a href="wol/<%= $host %>"> >> wake-up</a></td>
+% }
+% if ($up->{$host}) {
+            <td bgcolor="lightgreen"><a href="ssh://<%= $hosts->{$host}[1] %>">up</a></td>
+% } else {
+            <td bgcolor="lightgrey">down</td>
 % }
         </tr>
 % }
