@@ -72,6 +72,7 @@ sub wol {
         name   => \$name,
         ip     => \$ip,
         mac    => \$mac,
+        reload => 1,
     );
 }
 
@@ -171,7 +172,9 @@ __DATA__
 <!html>
     <head>
         <title><%= $config->{'title'} %></title>
+% if (defined stash('reload') && defined $config->{'reload'}) {
         <meta http-equiv="refresh" content="<%= $config->{'reload'} %>; URL=/">
+% }
         <style type="text/css">
             body {background: #fff;font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;}
             h1,h2,h3,h4,h5 {font-family: times, "Times New Roman", times-roman, georgia, serif; line-height: 40px; letter-spacing: -1px; color: #444; margin: 0 0 0 0; padding: 0 0 0 0; font-weight: 100;}
