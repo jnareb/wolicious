@@ -136,7 +136,7 @@ __DATA__
     <p />
     <div align="center"><h1>Hosts</h1></div>
     <p />
-    <div align="center"><table border="0" cellspcacing="15" cellpadding="15">
+    <div align="center"><table border="0" cellspacing="2" cellpadding="15">
 %#    <!--
         <tr>
             <th>Nr.</th>
