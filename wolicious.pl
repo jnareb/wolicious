@@ -4,6 +4,8 @@ BEGIN { use FindBin; use lib "$FindBin::Bin/mojo/lib" }
 
 use Mojolicious::Lite;
 
+plugin 'Config' => { default => {} }; # make configuration file optional
+
 app->secrets(['kuuX8sheish0is1il1ci3ieQuu1ohh']);
 
 my %config = (
@@ -14,6 +16,9 @@ my %config = (
     baseurl => $ENV{WOLICIOUS_BASEURL} || '/',
     ping_proto   => 'tcp',    # default tcp, icmp, udp
     ping_timeout => '0.5',    # ping timeout
+
+    # override with values from the configuration file
+    %{ app->config },
 );
 
 #
