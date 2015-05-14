@@ -54,21 +54,21 @@ sub index {
     use IO::Socket::INET; # or IO::Socket::IP;
     my %up;
 
-    foreach my $host (keys %hosts) {
-        $alive{$host} = 'alive' if $p->ping("$hosts{$host}[1]");
+    # foreach my $host (keys %hosts) {
+    #     $alive{$host} = 'alive' if $p->ping("$hosts{$host}[1]");
 
-        my $io = IO::Socket::INET->new(
-            PeerHost => $hosts{$host}[1],
-            PeerPort => "ssh(22)"
-        );
-        $up{$host} = 'ssh' if $io;
+    #     my $io = IO::Socket::INET->new(
+    #         PeerHost => $hosts{$host}[1],
+    #         PeerPort => "ssh(22)"
+    #     );
+    #     $up{$host} = 'ssh' if $io;
 
-        app->log->debug(
-	    "ping host:$hosts{$host}[1]" .
-	    ($alive{$host} ? " alive" : "") .
-	    ($up{$host}    ? " sshd"  : "")
-	);
-    }
+    #     app->log->debug(
+    #         "ping host:$hosts{$host}[1]" .
+    #         ($alive{$host} ? " alive" : "") .
+    #         ($up{$host}    ? " ssh"  : "")
+    #     );
+    # }
 
     $self->stash(config => \%config, hosts => \%hosts, alive => \%alive, up => \%up);
 }
@@ -183,22 +183,28 @@ __DATA__
 %#    -->
 % foreach my $host (sort keys %$hosts) {
 % if ($alive->{$host}) {
-        <tr bgcolor="lightgreen">
+        <tr id="<%= $host %>" bgcolor="lightgreen">
+% } elsif (exists $alive->{$host}) {
+        <tr id="<%= $host %>" bgcolor="lightgrey">
 % } else {
-        <tr bgcolor="lightgrey">
+        <tr id="<%= $host %>" bgcolor="white">
 % }
             <td><%= $host %></td>
             <td><%= $hosts->{$host}[0] %></td>
             <td><a href="service/ping/<%= $host %>"><%= $hosts->{$host}[1] %></a></td>
 % if ($alive->{$host}) {
             <td bgcolor="lightgreen">alive</td>
-% } else {
+% } elsif (exists $alive->{$host}) {
             <td bgcolor="lightgrey"><a href="wol/<%= $host %>"> >> wake-up</a></td>
+% } else {
+            <td>waiting...</td>
 % }
 % if ($up->{$host}) {
             <td bgcolor="lightgreen"><a href="ssh://<%= $hosts->{$host}[1] %>">up</a></td>
-% } else {
+% } elsif (exists $up->{$host}) {
             <td bgcolor="lightgrey">down</td>
+% } else {
+            <td>...</td>
 % }
         </tr>
 % }
@@ -225,6 +231,7 @@ __DATA__
 % if (defined stash('reload') && defined $config->{'reload'}) {
         <meta http-equiv="refresh" content="<%= $config->{'reload'} %>; URL=/">
 % }
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
         <style type="text/css">
             body {background: #fff;font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;}
             h1,h2,h3,h4,h5 {font-family: times, "Times New Roman", times-roman, georgia, serif; line-height: 40px; letter-spacing: -1px; color: #444; margin: 0 0 0 0; padding: 0 0 0 0; font-weight: 100;}
@@ -258,6 +265,32 @@ __DATA__
             <%= content %>
             <div id="footer"><%= $config->{footer} %></div>
         </div><!-- div id=body -->
+% if (defined stash('hosts')) {
+% my $hosts = stash('hosts');
+        <script type="text/javascript">
+            $(function(){
+                var ids = [<%= join(',', sort keys %$hosts); %>];
+                $.each(ids, function(index,id){
+                    $.ajax({
+                        type:'GET',
+                        url:'/service/ping/'+id,
+                        dataType: 'json',
+                        success: function(json){
+                            var tr = $('#'+id),
+                                td = $('#'+id+' td:eq(3)');
+                            if (json.alive) {
+                                tr.attr('bgcolor', 'lightgreen');
+                                td.html('alive');
+                            } else {
+                                tr.attr('bgcolor', 'lightgrey');
+                                td.html('<a href="wol/'+json.id+'"> >> wake-up</a>');
+                            }
+                        }
+                    });
+                });
+            });
+        </script>
+% }
     </body>
 </html>
 
