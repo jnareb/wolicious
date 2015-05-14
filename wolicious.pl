@@ -73,6 +73,26 @@ sub index {
     $self->stash(config => \%config, hosts => \%hosts, alive => \%alive, up => \%up);
 }
 
+sub ping_service {
+    my $self = shift;
+
+    my $id   = $self->stash('id');
+    my $name = $hosts{$id}[0];
+    my $ip   = $hosts{$id}[1];
+
+    use Net::Ping;
+    my $p = Net::Ping->new($config{'ping_proto'}, $config{'ping_timeout'});
+    my $alive = !!$p->ping("$ip");
+
+    $self->render(
+        json => {
+            id    => $id,
+            name  => $name,
+            ip    => $ip,
+            alive => $alive,
+        });
+}
+
 sub wol {
     my $self = shift;
 
@@ -131,6 +151,8 @@ get '/' => \&index => 'index';
 get '/index' => \&index => 'index';
 
 get '/wol/:id' => \&wol => 'wol';
+
+get '/service/ping/:id' => \&ping_service;
 
 app->start(@ARGV ? @ARGV : 'cgi');
 
