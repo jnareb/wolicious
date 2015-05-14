@@ -53,12 +53,12 @@ sub index {
         $alive{$host} = 'alive' if $p->ping("$hosts{$host}[1]");
         app->log->debug("ping host:$hosts{$host}[1]");
 
-	my $io = IO::Socket::INET->new(
-	    PeerHost => $hosts{$host}[1],
-	    PeerPort => "ssh(22)"
-	);
-	$up{$host} = 'ssh' if $io;
-	app->log->debug("connect host:$hosts{$host}[1]");
+        my $io = IO::Socket::INET->new(
+            PeerHost => $hosts{$host}[1],
+            PeerPort => "ssh(22)"
+        );
+        $up{$host} = 'ssh' if $io;
+        app->log->debug("connect host:$hosts{$host}[1]");
     }
 
     $self->stash(config => \%config, hosts => \%hosts, alive => \%alive, up => \%up);
