@@ -71,7 +71,7 @@ sub ping_service {
 
     use Net::Ping;
     my $p = Net::Ping->new($config{'ping_proto'}, $config{'ping_timeout'});
-    my $alive = !!$p->ping("$ip");
+    my ($alive, $elapsed) = $p->ping("$ip");
 
     $self->render(
         json => {
@@ -79,6 +79,9 @@ sub ping_service {
             name  => $name,
             ip    => $ip,
             alive => $alive,
+            ping_proto => $config{'ping_proto'},
+            ping_timeout => $config{'ping_timeout'}+0,
+            elapsed_time => $elapsed+0,
         });
 }
 
