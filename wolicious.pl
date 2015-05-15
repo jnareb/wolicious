@@ -210,7 +210,7 @@ __DATA__
 % }
     </table></div>
     <p />
-    <script type="text/javascript">
+%= javascript begin
         $(function(){
             var ids = [<%= join(',', sort keys %$hosts); %>];
             $.each(ids, function(index,id){
@@ -232,7 +232,7 @@ __DATA__
                 });
             });
         });
-    </script>
+%= end
 
 @@ wol.html.ep
 % my $self = shift;
