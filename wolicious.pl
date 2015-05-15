@@ -96,6 +96,29 @@ sub ping_service {
         });
 }
 
+sub up_service {
+    my $self = shift;
+
+    my $id   = $self->stash('id');
+    my $name = $hosts{$id}[0];
+    my $ip   = $hosts{$id}[1];
+
+    use IO::Socket::INET; # or IO::Socket::IP;
+    my $io = IO::Socket::INET->new(
+        PeerHost => $ip,
+        PeerPort => 'ssh(22)',
+    );
+
+    $self->render(
+        json => {
+            id    => $id,
+            name  => $name,
+            ip    => $ip,
+            up    => !!$io,
+            peer_port => 'ssh(22)',
+        });
+}
+
 sub wol {
     my $self = shift;
 
@@ -156,6 +179,7 @@ get '/index' => \&index => 'index';
 get '/wol/:id' => \&wol => 'wol';
 
 get '/service/ping/:id' => \&ping_service;
+get '/service/up/:id' => \&up_service;
 
 app->start(@ARGV ? @ARGV : 'cgi');
 
@@ -227,6 +251,21 @@ __DATA__
                         } else {
                             tr.attr('bgcolor', 'lightgrey');
                             td.html('<a href="wol/'+json.id+'"> >> wake-up</a>');
+                        }
+                    }
+                });
+                $.ajax({
+                    type:'GET',
+                    url:'/service/up/'+id,
+                    dataType: 'json',
+                    success: function(json){
+                        var td = $('#'+id+' td:eq(4)');
+                        if (json.up) {
+                            td.attr('bgcolor', 'lightgreen');
+                            td.html('<a href="ssh://'+json.ip+'">up</a>');
+                        } else {
+                            td.attr('bgcolor', 'lightgrey');
+                            td.html('down');
                         }
                     }
                 });
