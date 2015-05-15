@@ -212,7 +212,7 @@ __DATA__
     <p />
 %= javascript begin
         $(function(){
-            var ids = [<%= join(',', sort keys %$hosts); %>];
+            var ids = [<%= join(',', sort grep { !exists $alive->{$_} } keys %$hosts); %>];
             $.each(ids, function(index,id){
                 $.ajax({
                     type:'GET',
