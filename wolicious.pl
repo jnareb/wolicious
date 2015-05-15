@@ -210,6 +210,29 @@ __DATA__
 % }
     </table></div>
     <p />
+    <script type="text/javascript">
+        $(function(){
+            var ids = [<%= join(',', sort keys %$hosts); %>];
+            $.each(ids, function(index,id){
+                $.ajax({
+                    type:'GET',
+                    url:'/service/ping/'+id,
+                    dataType: 'json',
+                    success: function(json){
+                        var tr = $('#'+id),
+                            td = $('#'+id+' td:eq(3)');
+                        if (json.alive) {
+                            tr.attr('bgcolor', 'lightgreen');
+                            td.html('alive');
+                        } else {
+                            tr.attr('bgcolor', 'lightgrey');
+                            td.html('<a href="wol/'+json.id+'"> >> wake-up</a>');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 
 @@ wol.html.ep
 % my $self = shift;
@@ -265,32 +288,6 @@ __DATA__
             <%= content %>
             <div id="footer"><%= $config->{footer} %></div>
         </div><!-- div id=body -->
-% if (defined stash('hosts')) {
-% my $hosts = stash('hosts');
-        <script type="text/javascript">
-            $(function(){
-                var ids = [<%= join(',', sort keys %$hosts); %>];
-                $.each(ids, function(index,id){
-                    $.ajax({
-                        type:'GET',
-                        url:'/service/ping/'+id,
-                        dataType: 'json',
-                        success: function(json){
-                            var tr = $('#'+id),
-                                td = $('#'+id+' td:eq(3)');
-                            if (json.alive) {
-                                tr.attr('bgcolor', 'lightgreen');
-                                td.html('alive');
-                            } else {
-                                tr.attr('bgcolor', 'lightgrey');
-                                td.html('<a href="wol/'+json.id+'"> >> wake-up</a>');
-                            }
-                        }
-                    });
-                });
-            });
-        </script>
-% }
     </body>
 </html>
 
