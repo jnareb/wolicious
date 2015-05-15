@@ -16,6 +16,7 @@ my %config = (
     baseurl => $ENV{WOLICIOUS_BASEURL} || '/',
     ping_proto   => 'tcp',    # default tcp, icmp, udp
     ping_timeout => '0.5',    # ping timeout
+    ajax => 0,    # whether to use AJAX to check if hosts are up
 
     # override with values from the configuration file
     %{ app->config },
@@ -51,13 +52,15 @@ sub index {
 
     my %alive;
 
-    # foreach my $host (keys %hosts) {
-    #     $alive{$host} = 'alive' if $p->ping("$hosts{$host}[1]");
-    #     app->log->debug(
-    #         "ping host:$hosts{$host}[1]" .
-    #         ($alive{$host} ? " alive" : "")
-    #     );
-    # }
+    unless ($config{'ajax'}) {
+        foreach my $host (keys %hosts) {
+            $alive{$host} = $p->ping("$hosts{$host}[1]") ? 'alive' : '';
+            app->log->debug(
+                "ping host:$hosts{$host}[1]" .
+                ($alive{$host} ? " alive" : "")
+            );
+        }
+    }
 
     $self->stash(config => \%config, hosts => \%hosts, alive => \%alive,);
 }
@@ -191,6 +194,7 @@ __DATA__
 % }
     </table></div>
     <p />
+% if ($config->{'ajax'}) {
 %= javascript begin
         $(function(){
             var ids = [<%= join(',', sort grep { !exists $alive->{$_} } keys %$hosts); %>];
@@ -214,6 +218,7 @@ __DATA__
             });
         });
 %= end
+% }
 
 @@ wol.html.ep
 % my $self = shift;
