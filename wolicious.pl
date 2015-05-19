@@ -182,7 +182,7 @@ __DATA__
 % }
             <td><%= $host %></td>
             <td><%= $hosts->{$host}[0] %></td>
-            <td><a href="service/ping/<%= $host %>"><%= $hosts->{$host}[1] %></a></td>
+            <td><%= $hosts->{$host}[1] %></td>
 % if ($alive->{$host}) {
             <td>alive</td>
 % } elsif (exists $alive->{$host}) {
