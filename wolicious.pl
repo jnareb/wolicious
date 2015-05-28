@@ -17,6 +17,7 @@ my %config = (
     ping_proto   => 'tcp',    # default tcp, icmp, udp
     ping_timeout => '0.5',    # ping timeout
     ajax => 1,    # whether to use AJAX to check if hosts are up
+    async => 1,   # whether to do pings asynchronously
 
     # override with values from the configuration file
     %{ app->config },
@@ -54,17 +55,57 @@ sub index {
 	goto INDEX_END;
     }
 
-    use Net::Ping;
-    my $p = Net::Ping->new($config{'ping_proto'}, $config{'ping_timeout'});
+    my ($p, $cv, $f);
 
-    my %alive;
+    if ($config{'async'} && ($config{'ping_proto'} eq 'icmp')) {
+        use AE;
+        use AnyEvent;
 
-    foreach my $host (keys %hosts) {
-	$alive{$host} = $p->ping("$hosts{$host}[1]") ? 'alive' : '';
-	app->log->debug(
-	    "ping host:$hosts{$host}[1]" .
-	    ($alive{$host} ? " alive" : "")
+        use AnyEvent::Ping;
+
+
+        $cv = AnyEvent->condvar;
+        $p = AnyEvent::Ping->new(
+            timeout => $config{'ping_timeout'},
         );
+
+        $cv->begin( sub {
+            shift->send( \%alive );
+        });
+
+        foreach my $host (keys %hosts) {
+            $cv->begin;
+            $p->ping("$hosts{$host}[1]", 1, sub {
+                my $status = shift->[0][0];
+                $alive{$host} = $status ? 'alive' : '';
+                app->log->debug(
+                    "async ping host:$hosts{$host}[1]" .
+                    ($alive{$host} ? " alive" : "")
+                );
+                $cv->end;
+            });
+        }
+
+	$cv->end; # send( \%alive );
+	%alive = %{ $cv->recv };
+
+    } else {
+        if ($config{'async'}) {
+            app->log->debug(
+                "async not possible for $config{'ping_proto'} ping"
+            );
+        }
+
+        use Net::Ping;
+        $p = Net::Ping->new($config{'ping_proto'}, $config{'ping_timeout'});
+
+	foreach my $host (keys %hosts) {
+	    $alive{$host} = $p->ping("$hosts{$host}[1]") ? 'alive' : '';
+	    app->log->debug(
+		"ping host:$hosts{$host}[1]" .
+		($alive{$host} ? " alive" : "")
+            );
+	}
     }
 
   INDEX_END:
