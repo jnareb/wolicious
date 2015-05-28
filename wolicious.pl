@@ -46,22 +46,26 @@ _read_hosts_from_csv(\%hosts, $csv_file) if (-e $csv_file);
 
 sub index {
     my $self = shift;
+    my %alive;
+
+    if ($config{'ajax'}) {
+	goto INDEX_END;
+    }
 
     use Net::Ping;
     my $p = Net::Ping->new($config{'ping_proto'}, $config{'ping_timeout'});
 
     my %alive;
 
-    unless ($config{'ajax'}) {
-        foreach my $host (keys %hosts) {
-            $alive{$host} = $p->ping("$hosts{$host}[1]") ? 'alive' : '';
-            app->log->debug(
-                "ping host:$hosts{$host}[1]" .
-                ($alive{$host} ? " alive" : "")
-            );
-        }
+    foreach my $host (keys %hosts) {
+	$alive{$host} = $p->ping("$hosts{$host}[1]") ? 'alive' : '';
+	app->log->debug(
+	    "ping host:$hosts{$host}[1]" .
+	    ($alive{$host} ? " alive" : "")
+        );
     }
 
+  INDEX_END:
     $self->stash(config => \%config, hosts => \%hosts, alive => \%alive,);
 }
 
