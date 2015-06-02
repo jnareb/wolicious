@@ -16,7 +16,7 @@ my %config = (
     baseurl => $ENV{WOLICIOUS_BASEURL} || '/',
     ping_proto   => 'tcp',    # default tcp, icmp, udp
     ping_timeout => '0.5',    # ping timeout
-    ajax => 0,    # whether to use AJAX to check if hosts are up
+    ajax => 1,    # whether to use AJAX to check if hosts are up
 
     # override with values from the configuration file
     %{ app->config },
@@ -48,7 +48,9 @@ sub index {
     my $self = shift;
     my %alive;
 
-    if ($config{'ajax'}) {
+    my $ajax = $config{'ajax'};
+    $ajax &&= _configure_ajax($self, \%config);
+    if ($ajax) {
 	goto INDEX_END;
     }
 
@@ -66,7 +68,7 @@ sub index {
     }
 
   INDEX_END:
-    $self->stash(config => \%config, hosts => \%hosts, alive => \%alive,);
+    $self->stash(config => \%config, hosts => \%hosts, alive => \%alive, ajax => $ajax);
 }
 
 sub ping_service {
@@ -142,6 +144,19 @@ sub _read_hosts_from_csv {
 
 }
 
+sub _configure_ajax {
+    my ($self, $config) = @_;
+    my $javascript_cookie = $self->cookie('javascript');
+
+    if ($javascript_cookie) {
+        app->log->debug('javascript cookie: '.$javascript_cookie);
+        $self->cookie(javascript => 0, { expires => 1 });
+    } else {
+        app->log->debug('no javascript cookie');
+    }
+    return $javascript_cookie;
+}
+
 #
 # Routes
 #
@@ -201,7 +216,12 @@ __DATA__
 % if ($config->{'ajax'}) {
 %= javascript begin
         $(function(){
+            // to inform server that javascript is enabled, valid for 1 month
+            document.cookie = 'javascript=1; max-age=2592000; path="/"';
+
+% if ($ajax) {
             var ids = [<%= join(',', sort grep { !exists $alive->{$_} } keys %$hosts); %>];
+
             $.each(ids, function(index,id){
                 $.ajax({
                     type:'GET',
@@ -220,9 +240,10 @@ __DATA__
                     }
                 });
             });
+% } # end if ajax
         });
 %= end
-% }
+% } # end if ajax config
 
 @@ wol.html.ep
 % my $self = shift;
