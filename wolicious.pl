@@ -89,6 +89,63 @@ sub index {
 	$cv->end; # send( \%alive );
 	%alive = %{ $cv->recv };
 
+    } elsif ($config{'async'} && ($config{'ping_proto'} eq 'tcp')) {
+        use Net::Async::Ping;
+
+        my $p = Net::Async::Ping->new(
+            $config{'ping_proto'},  # protocol, only tcp supported
+            $config{'ping_timeout'} # default timeout
+        );
+        #use IO::Async::Loop::Mojo;
+        #my $loop = IO::Async::Loop::Mojo->new();
+        use IO::Async::Loop;
+        my $loop = IO::Async::Loop->new();
+
+	use Time::HiRes;
+	my $t0 = [Time::HiRes::gettimeofday];
+
+        use Future::Utils qw(fmap_scalar fmap_void);
+        my $f = fmap_void {
+            my $host = shift;
+            my $ip = $hosts{$host}[1];
+            app->log->debug("scheduling pinging host no $host: $ip");
+
+            my $host_f = $p
+                ->ping($loop, $ip)
+                ->on_done( sub {
+                #->then( sub {
+                    my ($elapsed) = @_;
+                    $alive{$host} = 'alive';
+                    app->log->debug("async ping host:$ip alive $elapsed");
+                    #return Future->new->done($elapsed);
+                })
+                ->on_fail( sub {
+                #->else( sub {
+                    my ($elapsed) = @_;
+                    $alive{$host} = '';
+                    app->log->debug("async ping host:$ip $elapsed");
+                    #return Future->new->done($elapsed);
+                })
+                ->on_cancel( sub {
+                    app->log->debug("async ping host:$ip cancelled");
+                })
+                ->followed_by( sub {
+                    #app->log->debug("async ping host:$ip done");
+                    return Future->new->done();
+                });
+            return $host_f;
+        } foreach => [ keys %hosts ], concurrent => scalar keys %hosts;
+
+        my $x = $f->then_with_f( sub {
+            my ($f, @results) = @_;
+            app->log->debug(
+                "async pinging finished in ".
+                Time::HiRes::tv_interval($t0)
+            );
+            return $f;
+        });
+        $x->get;
+
     } else {
         if ($config{'async'}) {
             app->log->debug(
